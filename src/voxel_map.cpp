@@ -11,6 +11,7 @@ which is included as part of this source code package.
 */
 
 #include "voxel_map.h"
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 void calcBodyCov(Eigen::Vector3d &pb, const float range_inc, const float degree_inc, Eigen::Matrix3d &cov)
 {
@@ -33,23 +34,47 @@ void calcBodyCov(Eigen::Vector3d &pb, const float range_inc, const float degree_
   cov = direction * range_var * direction.transpose() + A * direction_var * A.transpose();
 }
 
-void loadVoxelConfig(ros::NodeHandle &nh, VoxelMapConfig &voxel_config)
+void loadVoxelConfig(rclcpp::Node::SharedPtr node, VoxelMapConfig &voxel_config)
 {
-  nh.param<bool>("publish/pub_plane_en", voxel_config.is_pub_plane_map_, false);
+  node->declare_parameter("publish.pub_plane_en", false);
+  voxel_config.is_pub_plane_map_ = node->get_parameter("publish.pub_plane_en").as_bool();
   
-  nh.param<int>("lio/max_layer", voxel_config.max_layer_, 1);
-  nh.param<double>("lio/voxel_size", voxel_config.max_voxel_size_, 0.5);
-  nh.param<double>("lio/min_eigen_value", voxel_config.planner_threshold_, 0.01);
-  nh.param<double>("lio/sigma_num", voxel_config.sigma_num_, 3);
-  nh.param<double>("lio/beam_err", voxel_config.beam_err_, 0.02);
-  nh.param<double>("lio/dept_err", voxel_config.dept_err_, 0.05);
-  nh.param<vector<int>>("lio/layer_init_num", voxel_config.layer_init_num_, vector<int>{5,5,5,5,5});
-  nh.param<int>("lio/max_points_num", voxel_config.max_points_num_, 50);
-  nh.param<int>("lio/max_iterations", voxel_config.max_iterations_, 5);
+  node->declare_parameter("lio.max_layer", 1);
+  voxel_config.max_layer_ = node->get_parameter("lio.max_layer").as_int();
+  
+  node->declare_parameter("lio.voxel_size", 0.5);
+  voxel_config.max_voxel_size_ = node->get_parameter("lio.voxel_size").as_double();
+  
+  node->declare_parameter("lio.min_eigen_value", 0.01);
+  voxel_config.planner_threshold_ = node->get_parameter("lio.min_eigen_value").as_double();
+  
+  node->declare_parameter("lio.sigma_num", 3.0);
+  voxel_config.sigma_num_ = node->get_parameter("lio.sigma_num").as_double();
+  
+  node->declare_parameter("lio.beam_err", 0.02);
+  voxel_config.beam_err_ = node->get_parameter("lio.beam_err").as_double();
+  
+  node->declare_parameter("lio.dept_err", 0.05);
+  voxel_config.dept_err_ = node->get_parameter("lio.dept_err").as_double();
+  
+  node->declare_parameter("lio.layer_init_num", std::vector<int>{5,5,5,5,5});
+  auto layer_init_array = node->get_parameter("lio.layer_init_num").as_integer_array();
+  voxel_config.layer_init_num_.assign(layer_init_array.begin(), layer_init_array.end());
+  
+  node->declare_parameter("lio.max_points_num", 50);
+  voxel_config.max_points_num_ = node->get_parameter("lio.max_points_num").as_int();
+  
+  node->declare_parameter("lio.max_iterations", 5);
+  voxel_config.max_iterations_ = node->get_parameter("lio.max_iterations").as_int();
 
-  nh.param<bool>("local_map/map_sliding_en", voxel_config.map_sliding_en, false);
-  nh.param<int>("local_map/half_map_size", voxel_config.half_map_size, 100);
-  nh.param<double>("local_map/sliding_thresh", voxel_config.sliding_thresh, 8);
+  node->declare_parameter("local_map.map_sliding_en", false);
+  voxel_config.map_sliding_en = node->get_parameter("local_map.map_sliding_en").as_bool();
+  
+  node->declare_parameter("local_map.half_map_size", 100);
+  voxel_config.half_map_size = node->get_parameter("local_map.half_map_size").as_int();
+  
+  node->declare_parameter("local_map.sliding_thresh", 8.0);
+  voxel_config.sliding_thresh = node->get_parameter("local_map.sliding_thresh").as_double();
 }
 
 void VoxelOctoTree::init_plane(const std::vector<pointWithVar> &points, VoxelPlane *plane)
@@ -490,8 +515,10 @@ void VoxelMapManager::StateEstimation(StatesGroup &state_propagat)
           (I_STATE.block<DIM_STATE, DIM_STATE>(0, 0) - G.block<DIM_STATE, DIM_STATE>(0, 0)) * state_.cov.block<DIM_STATE, DIM_STATE>(0, 0);
       // total_distance += (_state.pos_end - position_last).norm();
       position_last_ = state_.pos_end;
-      geoQuat_ = tf::createQuaternionMsgFromRollPitchYaw(euler_cur(0), euler_cur(1), euler_cur(2));
-
+      tf2::Quaternion q_tf2;
+      q_tf2.setRPY(euler_cur(0), euler_cur(1), euler_cur(2));
+      geoQuat_ = tf2::toMsg(q_tf2);
+      
       // VD(DIM_STATE) K_sum  = K.rowwise().sum();
       // VD(DIM_STATE) P_diag = _state.cov.diagonal();
       EKF_stop_flg = true;
@@ -789,9 +816,8 @@ void VoxelMapManager::pubVoxelMap()
 {
   double max_trace = 0.25;
   double pow_num = 0.2;
-  ros::Rate loop(500);
   float use_alpha = 0.8;
-  visualization_msgs::MarkerArray voxel_plane;
+  visualization_msgs::msg::MarkerArray voxel_plane;
   voxel_plane.markers.reserve(1000000);
   std::vector<VoxelPlane> pub_plane_list;
   for (auto iter = voxel_map_.begin(); iter != voxel_map_.end(); iter++)
@@ -813,8 +839,8 @@ void VoxelMapManager::pubVoxelMap()
     else { alpha = 0; }
     pubSinglePlane(voxel_plane, "plane", pub_plane_list[i], alpha, plane_rgb);
   }
-  voxel_map_pub_.publish(voxel_plane);
-  loop.sleep();
+  voxel_map_pub_->publish(voxel_plane);
+  // 移除 loop.sleep(); - ROS2中不需要
 }
 
 void VoxelMapManager::GetUpdatePlane(const VoxelOctoTree *current_octo, const int pub_max_voxel_layer, std::vector<VoxelPlane> &plane_list)
@@ -834,20 +860,20 @@ void VoxelMapManager::GetUpdatePlane(const VoxelOctoTree *current_octo, const in
   return;
 }
 
-void VoxelMapManager::pubSinglePlane(visualization_msgs::MarkerArray &plane_pub, const std::string plane_ns, const VoxelPlane &single_plane,
+void VoxelMapManager::pubSinglePlane(visualization_msgs::msg::MarkerArray &plane_pub, const std::string plane_ns, const VoxelPlane &single_plane,
                                      const float alpha, const Eigen::Vector3d rgb)
 {
-  visualization_msgs::Marker plane;
+  visualization_msgs::msg::Marker plane;
   plane.header.frame_id = "camera_init";
-  plane.header.stamp = ros::Time();
+  plane.header.stamp = rclcpp::Time(0);
   plane.ns = plane_ns;
   plane.id = single_plane.id_;
-  plane.type = visualization_msgs::Marker::CYLINDER;
-  plane.action = visualization_msgs::Marker::ADD;
+  plane.type = visualization_msgs::msg::Marker::CYLINDER;
+  plane.action = visualization_msgs::msg::Marker::ADD;
   plane.pose.position.x = single_plane.center_[0];
   plane.pose.position.y = single_plane.center_[1];
   plane.pose.position.z = single_plane.center_[2];
-  geometry_msgs::Quaternion q;
+  geometry_msgs::msg::Quaternion q;
   CalcVectQuation(single_plane.x_normal_, single_plane.y_normal_, single_plane.normal_, q);
   plane.pose.orientation = q;
   plane.scale.x = 3 * sqrt(single_plane.max_eigen_value_);
@@ -857,12 +883,12 @@ void VoxelMapManager::pubSinglePlane(visualization_msgs::MarkerArray &plane_pub,
   plane.color.r = rgb(0);
   plane.color.g = rgb(1);
   plane.color.b = rgb(2);
-  plane.lifetime = ros::Duration();
+  plane.lifetime = rclcpp::Duration::from_nanoseconds(0);
   plane_pub.markers.push_back(plane);
 }
 
 void VoxelMapManager::CalcVectQuation(const Eigen::Vector3d &x_vec, const Eigen::Vector3d &y_vec, const Eigen::Vector3d &z_vec,
-                                      geometry_msgs::Quaternion &q)
+                                      geometry_msgs::msg::Quaternion &q)
 {
   Eigen::Matrix3d rot;
   rot << x_vec(0), x_vec(1), x_vec(2), y_vec(0), y_vec(1), y_vec(2), z_vec(0), z_vec(1), z_vec(2);

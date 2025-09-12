@@ -1,4 +1,6 @@
 <?xml version="1.0"?>
+
+<!--
 <package>
   <name>fast_livo</name>
   <version>0.0.0</version>
@@ -17,37 +19,96 @@
   <author email="zhangji@cmu.edu">Ji Zhang</author>
   
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>geometry_msgs</build_depend>
-  <build_depend>nav_msgs</build_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>rospy</build_depend>
-  <build_depend>std_msgs</build_depend>
-  <build_depend>sensor_msgs</build_depend>
-  <build_depend>tf</build_depend>
-  <build_depend>pcl_ros</build_depend>
+  
+  <build_depend> geometry_msgs </build_depend>
+    <run_depend> geometry_msgs </run_depend>
+  <build_depend> nav_msgs </build_depend>
+    <run_depend> nav_msgs </run_depend>
+  <build_depend> roscpp </build_depend>
+    <run_depend> roscpp </run_depend>
+  <build_depend> rospy </build_depend>
+    <run_depend> rospy </run_depend>
+  <build_depend> std_msgs </build_depend>
+    <run_depend> std_msgs </run_depend>
+  <build_depend> sensor_msgs </build_depend>
+    <run_depend> sensor_msgs </run_depend>
+  <build_depend> tf </build_depend>
+    <run_depend> tf </run_depend>
+  <build_depend> pcl_ros </build_depend>
+    <run_depend> pcl_ros </run_depend>
+  <build_depend> vikit_common </build_depend>
+    <run_depend> vikit_common </run_depend>
+  <build_depend> vikit_ros </build_depend>
+    <run_depend> vikit_ros </run_depend>
+  <build_depend> cv_bridge </build_depend>
+    <run_depend> cv_bridge </run_depend>
+  <build_depend> image_transport </build_depend> 
+    <run_depend> image_transport </run_depend> 
+  
+  
   <build_depend>message_generation</build_depend>
-  <build_depend>vikit_common</build_depend>
-  <build_depend>vikit_ros</build_depend>
-  <build_depend>cv_bridge</build_depend>
-
-  <run_depend>geometry_msgs</run_depend>
-  <run_depend>nav_msgs</run_depend>
-  <run_depend>sensor_msgs</run_depend>
-  <run_depend>roscpp</run_depend>
-  <run_depend>rospy</run_depend>
-  <run_depend>std_msgs</run_depend>
-  <run_depend>tf</run_depend>
-  <run_depend>pcl_ros</run_depend>
   <run_depend>message_runtime</run_depend>
-  <run_depend>vikit_common</run_depend>
-  <run_depend>vikit_ros</run_depend>
-  <run_depend>cv_bridge</run_depend>
-  <build_depend>image_transport</build_depend> 
-  <run_depend>image_transport</run_depend> 
 
   <test_depend>rostest</test_depend>
   <test_depend>rosbag</test_depend>
 
   <export>
+  </export>
+</package> -->
+
+<package format="3">
+  <name>fast_livo</name>
+  <version>0.0.0</version>
+
+  <description>
+    Modified from [FAST_LIVO2](https://github.com/hku-mars/FAST-LIVO2).
+  </description>
+
+  <maintainer email="dev@livoxtech.com">claydergc</maintainer>
+
+  <license>BSD</license>
+
+  <author email="zhangji@cmu.edu">Ji Zhang</author>
+  
+  <!-- ROS2 Build Tool (replaces catkin) -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  
+  <!-- ROS2 Core Dependencies (replaces roscpp/rospy) -->
+  <depend>rclcpp</depend>  <!-- replaces roscpp -->
+  <depend>rclcpp_components</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>visualization_msgs</depend>
+  
+  <!-- TF2 Dependencies (replaces tf) -->
+  <depend>tf2</depend>  <!-- replaces tf -->
+  <depend>tf2_ros</depend>
+  <depend>tf2_geometry_msgs</depend>
+  
+  <!-- Image and PCL Dependencies -->
+  <depend>image_transport</depend>
+  <depend>cv_bridge</depend>
+  <depend>pcl_ros</depend>
+
+  <!-- Message Generation (replaces message_generation/message_runtime) -->
+  <depend>rosidl_default_generators</depend>  <!-- replaces message_generation -->
+  <exec_depend>rosidl_default_runtime</exec_depend>  <!-- replaces message_runtime -->
+  
+  <!-- Third-party Dependencies -->
+  <depend>eigen3_cmake_module</depend>
+  
+  <!-- TODO: vikit_common and vikit_ros need ROS2 alternatives or integration -->
+  <depend>vikit_common</depend>
+  <depend>vikit_ros</depend>
+  <depend>livox_ros_driver</depend>
+  
+  <!-- Test Dependencies -->
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
   </export>
 </package>

@@ -1,5 +1,14 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.8)
 project(fast_livo)
+
+# Default to C++17
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
 set(CMAKE_BUILD_TYPE "Release")
 message(STATUS "Build Type: ${CMAKE_BUILD_TYPE}")
@@ -75,46 +84,37 @@ else()
   message(STATUS "mimalloc not found, proceeding without it")
 endif()
 
-# Find catkin and required dependencies
-find_package(catkin REQUIRED COMPONENTS
-  geometry_msgs
-  nav_msgs
-  sensor_msgs
-  roscpp
-  rospy
-  std_msgs
-  pcl_ros
-  tf
-  message_generation
-  eigen_conversions
-  vikit_common
-  vikit_ros
-  cv_bridge
-  image_transport
-)
+# Find ROS2 dependencies
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(image_transport REQUIRED)
+find_package(pcl_ros REQUIRED)
+find_package(livox_ros_driver REQUIRED)
+find_package(vikit_common REQUIRED)
+find_package(vikit_ros REQUIRED)
 
+# Find other dependencies
 find_package(Eigen3 REQUIRED)
 find_package(PCL REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Sophus REQUIRED)
 find_package(Boost REQUIRED COMPONENTS thread)
 
-set(Sophus_LIBRARIES libSophus.so)
-
-# Define the catkin package
-catkin_package(
-  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs message_runtime cv_bridge vikit_common vikit_ros image_transport
-  DEPENDS EIGEN3 PCL OpenCV Sophus
-)
-
 # Include directories for dependencies
 include_directories(
-  ${catkin_INCLUDE_DIRS}
+  include
   ${EIGEN3_INCLUDE_DIR}
   ${PCL_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
   ${Sophus_INCLUDE_DIRS}
-  include
 )
 
 # Add libraries
@@ -124,8 +124,119 @@ add_library(pre src/preprocess.cpp)
 add_library(imu_proc src/IMU_Processing.cpp)
 add_library(laser_mapping src/LIVMapper.cpp)
 
+target_link_libraries(vio Sophus::Sophus)
+target_link_libraries(lio Sophus::Sophus)
+target_link_libraries(pre Sophus::Sophus)
+target_link_libraries(imu_proc Sophus::Sophus)
+target_link_libraries(laser_mapping Sophus::Sophus)
+
+# Add ROS2 dependencies to libraries
+ament_target_dependencies(vio
+  rclcpp
+  std_msgs
+  nav_msgs
+  sensor_msgs
+  geometry_msgs
+  visualization_msgs
+  cv_bridge
+  Eigen3
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  Sophus
+  vikit_common
+  vikit_ros
+)
+
+ament_target_dependencies(lio
+  rclcpp
+  std_msgs
+  sensor_msgs
+  geometry_msgs
+  visualization_msgs
+  PCL
+  Eigen3
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  Sophus
+  vikit_common
+  vikit_ros
+)
+
+ament_target_dependencies(pre
+  rclcpp
+  std_msgs
+  sensor_msgs
+  geometry_msgs
+  PCL
+  pcl_ros
+  Eigen3
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  Sophus
+  vikit_common
+  vikit_ros
+  livox_ros_driver
+)
+
+ament_target_dependencies(imu_proc
+  rclcpp
+  std_msgs
+  nav_msgs
+  sensor_msgs
+  geometry_msgs
+  Eigen3
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  Sophus
+  vikit_common
+  vikit_ros
+  livox_ros_driver
+)
+
+ament_target_dependencies(laser_mapping
+  rclcpp
+  std_msgs
+  sensor_msgs
+  geometry_msgs
+  nav_msgs
+  visualization_msgs
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+  cv_bridge
+  image_transport
+  pcl_ros
+  Eigen3
+  Sophus
+  vikit_common
+  vikit_ros
+  livox_ros_driver
+)
+
 # Add the main executable
 add_executable(fastlivo_mapping src/main.cpp)
+
+# Add ROS2 dependencies to executable
+ament_target_dependencies(fastlivo_mapping
+  rclcpp
+  std_msgs
+  sensor_msgs
+  geometry_msgs
+  nav_msgs
+  tf2_ros
+  tf2_geometry_msgs
+  cv_bridge
+  image_transport
+  pcl_ros
+  Eigen3
+  Sophus
+  vikit_common
+  vikit_ros
+)
 
 # Link libraries to the executable
 target_link_libraries(fastlivo_mapping
@@ -134,14 +245,81 @@ target_link_libraries(fastlivo_mapping
   lio
   pre
   imu_proc
-  ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
   ${OpenCV_LIBRARIES}
-  ${Sophus_LIBRARIES}
+  Sophus::Sophus
   ${Boost_LIBRARIES}
 )
+
+# Link OpenMP if found
+if(OpenMP_CXX_FOUND)
+  target_link_libraries(fastlivo_mapping ${OpenMP_CXX_LIBRARIES})
+endif()
 
 # Link mimalloc if found
 if(mimalloc_FOUND)
   target_link_libraries(fastlivo_mapping mimalloc)
 endif()
+
+# Install targets
+install(TARGETS
+  fastlivo_mapping
+  vio
+  lio
+  pre
+  imu_proc
+  laser_mapping
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+# Install launch files
+install(DIRECTORY launch/
+  DESTINATION share/${PROJECT_NAME}/launch
+)
+
+# Install config files
+install(DIRECTORY config/
+  DESTINATION share/${PROJECT_NAME}/config
+)
+
+# Install rviz config files
+install(DIRECTORY rviz_cfg/
+  DESTINATION share/${PROJECT_NAME}/rviz_cfg
+)
+
+# Install header files
+install(DIRECTORY include/
+  DESTINATION include/
+)
+
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  ament_lint_auto_find_test_dependencies()
+endif()
+
+# Export dependencies
+ament_export_include_directories(include)
+ament_export_libraries(
+  vio
+  lio
+  pre
+  imu_proc
+  laser_mapping
+)
+ament_export_dependencies(
+  rclcpp
+  std_msgs
+  sensor_msgs
+  geometry_msgs
+  nav_msgs
+  tf2_ros
+  tf2_geometry_msgs
+  cv_bridge
+  image_transport
+  pcl_ros
+  PCL
+  Eigen3
+  Sophus
+)
+
+ament_package()
