@@ -47,7 +47,11 @@ def generate_launch_description():
         package='image_transport',
         executable='republish',
         name='republish',
-        arguments=['compressed', 'in:=/left_camera/image', 'raw', 'out:=/left_camera/image'],
+        arguments=['raw', 'compressed'],
+        remappings=[
+            ('in', '/left_camera/image'),
+            ('out', '/left_camera/image')
+        ],
         output='screen',
         respawn=True
     )

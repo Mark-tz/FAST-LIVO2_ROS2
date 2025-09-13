@@ -10,7 +10,7 @@ laserMapping:
 
     extrin_calib:
       extrinsic_T: [0.04165, 0.02326, -0.0284]
-      extrinsic_R: [1, 0, 0, 0, 1, 0, 0, 0, 1]
+      extrinsic_R: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
       # MARS_LVIG HKisland HKairport
       Rcl: [0.00438814,-0.999807,-0.0191582,
             -0.00978695,0.0191145,-0.999769,
@@ -56,8 +56,8 @@ laserMapping:
 
     vio:
       max_iterations: 5
-      outlier_threshold: 1000 # 78 100 156 #100 200 500 700 infinite
-      img_point_cov: 1000 # 100 1000 
+      outlier_threshold: 1000.0 # 78 100 156 #100 200 500 700 infinite
+      img_point_cov: 1000.0 # 100 1000 
       patch_size: 8
       patch_pyrimid_level: 4
       normal_en: true

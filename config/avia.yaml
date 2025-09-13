@@ -10,7 +10,7 @@ laserMapping:
 
     extrin_calib:
       extrinsic_T: [0.04165, 0.02326, -0.0284]
-      extrinsic_R: [1, 0, 0, 0, 1, 0, 0, 0, 1]
+      extrinsic_R: [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
       Rcl: [0.00610193,-0.999863,-0.0154172,
             -0.00615449,0.0153796,-0.999863,
             0.999962,0.00619598,-0.0060598] 
@@ -30,8 +30,8 @@ laserMapping:
 
     vio:
       max_iterations: 5
-      outlier_threshold: 1000 # 78 100 156 #100 200 500 700 infinite
-      img_point_cov: 100 # 100 1000 
+      outlier_threshold: 1000.0 # 78 100 156 #100 200 500 700 infinite
+      img_point_cov: 100.0 # 100 1000 
       patch_size: 8
       patch_pyrimid_level: 4
       normal_en: true
