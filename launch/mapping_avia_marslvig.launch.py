@@ -14,7 +14,7 @@ def generate_launch_description():
     )
     
     # Get package share directory
-    pkg_share = FindPackageShare('fast_livo2')
+    pkg_share = FindPackageShare('fast_livo')
     
     # Load parameters from YAML files
     config_file = PathJoinSubstitution([pkg_share, 'config', 'MARS_LVIG.yaml'])
@@ -23,7 +23,7 @@ def generate_launch_description():
     
     # Main mapping node
     mapping_node = Node(
-        package='fast_livo2',
+        package='fast_livo',
         executable='fastlivo_mapping',
         name='laserMapping',
         output='screen',
