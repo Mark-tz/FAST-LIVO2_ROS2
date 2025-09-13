@@ -1,14 +1,14 @@
 laserMapping:
   ros__parameters:
-    cam_model: "EquidistantCamera"
-    cam_width: 720
-    cam_height: 540
-    scale: 1.0
-    cam_fx: 351.31400364193297
-    cam_fy: 351.4911744656785
-    cam_cx: 367.8522793375995
-    cam_cy: 253.8402144980996
-    k1: -0.03696737352869157
-    k2: -0.008917880497032812
-    k3: 0.008912969593422046
-    k4: -0.0037685977496087313
+    laserMapping.cam_model: "EquidistantCamera"
+    laserMapping.cam_width: 720
+    laserMapping.cam_height: 540
+    laserMapping.scale: 1.0
+    laserMapping.cam_fx: 351.31400364193297
+    laserMapping.cam_fy: 351.4911744656785
+    laserMapping.cam_cx: 367.8522793375995
+    laserMapping.cam_cy: 253.8402144980996
+    laserMapping.k1: -0.03696737352869157
+    laserMapping.k2: -0.008917880497032812
+    laserMapping.k3: 0.008912969593422046
+    laserMapping.k4: -0.0037685977496087313

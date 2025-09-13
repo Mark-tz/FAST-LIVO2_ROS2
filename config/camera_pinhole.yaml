@@ -1,14 +1,14 @@
 laserMapping:
   ros__parameters:
-    cam_model: "Pinhole"
-    cam_width: 1280
-    cam_height: 1024
-    scale: 0.5
-    cam_fx: 1293.56944
-    cam_fy: 1293.3155
-    cam_cx: 626.91359
-    cam_cy: 522.799224
-    cam_d0: -0.076160
-    cam_d1: 0.123001
-    cam_d2: -0.00113
-    cam_d3: 0.000251
+    laserMapping.cam_model: "Pinhole"
+    laserMapping.cam_width: 1280
+    laserMapping.cam_height: 1024
+    laserMapping.scale: 0.5
+    laserMapping.cam_fx: 1293.56944
+    laserMapping.cam_fy: 1293.3155
+    laserMapping.cam_cx: 626.91359
+    laserMapping.cam_cy: 522.799224
+    laserMapping.cam_d0: -0.076160
+    laserMapping.cam_d1: 0.123001
+    laserMapping.cam_d2: -0.00113
+    laserMapping.cam_d3: 0.000251

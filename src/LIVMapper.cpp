@@ -28,8 +28,8 @@ LIVMapper::LIVMapper(const std::string& node_name) : Node(node_name),
   p_imu.reset(new ImuProcess());
 
   readParameters();
-  VoxelMapConfig voxel_config;
-  loadVoxelConfig(shared_from_this(), voxel_config);
+  // VoxelMapConfig voxel_config;
+  // loadVoxelConfig(voxel_config);
 
   visual_sub_map.reset(new PointCloudXYZI());
   feats_undistort.reset(new PointCloudXYZI());
@@ -39,15 +39,26 @@ LIVMapper::LIVMapper(const std::string& node_name) : Node(node_name),
   pcl_wait_pub.reset(new PointCloudXYZI());
   pcl_wait_save.reset(new PointCloudXYZRGB());
   pcl_wait_save_intensity.reset(new PointCloudXYZI());
-  voxelmap_manager.reset(new VoxelMapManager(voxel_config, voxel_map));
+  // voxelmap_manager.reset(new VoxelMapManager(voxel_config, voxel_map));
   vio_manager.reset(new VIOManager());
   root_dir = ROOT_DIR;
   initializeFiles();
-  initializeComponents();
   path.header.stamp = this->now();
   path.header.frame_id = "camera_init";
-  
+}
+
+void LIVMapper::initialize()
+{
+  loadVoxelConfig();
+  initializeComponents();
   initializeSubscribersAndPublishers();
+}
+
+void LIVMapper::loadVoxelConfig()
+{
+  VoxelMapConfig voxel_config;
+  ::loadVoxelConfig(shared_from_this(), voxel_config);
+  voxelmap_manager.reset(new VoxelMapManager(voxel_config, voxel_map));
 }
 
 LIVMapper::~LIVMapper() {}
@@ -192,6 +203,19 @@ void LIVMapper::readParameters()
   pub_scan_num = this->get_parameter("publish.pub_scan_num").as_int();
   pub_effect_point_en = this->get_parameter("publish.pub_effect_point_en").as_bool();
   dense_map_en = this->get_parameter("publish.dense_map_en").as_bool();
+
+  this->declare_parameter<std::string>("laserMapping.cam_model", "Pinhole");
+  this->declare_parameter<int>("laserMapping.cam_width", 752);
+  this->declare_parameter<int>("laserMapping.cam_height", 480);
+  this->declare_parameter<double>("laserMapping.scale", 1.0);
+  this->declare_parameter<double>("laserMapping.cam_fx", 400.0);
+  this->declare_parameter<double>("laserMapping.cam_fy", 400.0);
+  this->declare_parameter<double>("laserMapping.cam_cx", 376.0);
+  this->declare_parameter<double>("laserMapping.cam_cy", 240.0);
+  this->declare_parameter<double>("laserMapping.cam_d0", 0.0);
+  this->declare_parameter<double>("laserMapping.cam_d1", 0.0);
+  this->declare_parameter<double>("laserMapping.cam_d2", 0.0);
+  this->declare_parameter<double>("laserMapping.cam_d3", 0.0);
 }
 
 void LIVMapper::initializeComponents() 
@@ -299,7 +323,7 @@ void LIVMapper::initializeSubscribersAndPublishers()
   pubLaserCloudDynRmed = this->create_publisher<sensor_msgs::msg::PointCloud2>("/cloud_dyn_rmed", 100);
   pubLaserCloudDynDbg = this->create_publisher<sensor_msgs::msg::PointCloud2>("/cloud_dyn_dbg", 100);
   
-  // 创建image_transport发布器
+  // 现在可以安全使用 shared_from_this()
   image_transport::ImageTransport it(shared_from_this());
   pubImage = it.advertise("/rgb_img", 1);
   

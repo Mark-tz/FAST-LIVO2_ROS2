@@ -50,6 +50,9 @@ public:
   LIVMapper(const std::string& node_name = "liv_mapper");
   ~LIVMapper();
   
+  void initialize();
+  void loadVoxelConfig();
+
   void initializeSubscribersAndPublishers();
   void initializeComponents();
   void initializeFiles();

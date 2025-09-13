@@ -1,18 +1,18 @@
 laserMapping:
   ros__parameters:
-    cam_model: "Pinhole"
+    laserMapping.cam_model: "Pinhole"
     # HKisland  HKairport
-    cam_width: 2448
-    cam_height: 2048
-    scale: 0.25
-    cam_fx: 1444.431662789634           
-    cam_fy: 1444.343536688358
-    cam_cx: 1177.801079401826
-    cam_cy: 1043.601026568268
-    cam_d0: -0.05729528706141188
-    cam_d1: 0.1210407244166642
-    cam_d2: 0.001274128378760289
-    cam_d3: 0.0004389741530109464
+    laserMapping.cam_width: 2448
+    laserMapping.cam_height: 2048
+    laserMapping.scale: 0.25
+    laserMapping.cam_fx: 1444.431662789634           
+    laserMapping.cam_fy: 1444.343536688358
+    laserMapping.cam_cx: 1177.801079401826
+    laserMapping.cam_cy: 1043.601026568268
+    laserMapping.cam_d0: -0.05729528706141188
+    laserMapping.cam_d1: 0.1210407244166642
+    laserMapping.cam_d2: 0.001274128378760289
+    laserMapping.cam_d3: 0.0004389741530109464
 
     # AMtown AMvalley
     # cam_width: 2448
