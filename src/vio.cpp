@@ -1786,16 +1786,31 @@ void VIOManager::dumpDataForColmap()
 
 void VIOManager::processFrame(cv::Mat &img, vector<pointWithVar> &pg, const unordered_map<VOXEL_LOCATION, VoxelOctoTree *> &feat_map, double img_time)
 {
-  if (width != img.cols || height != img.rows)
-  {
-    if (img.empty()) printf("[ VIO ] Empty Image!\n");
-    cv::resize(img, img, cv::Size(img.cols * image_resize_factor, img.rows * image_resize_factor), 0, 0, CV_INTER_LINEAR);
+  if (width != img.cols || height != img.rows){
+    if (img.empty()) {
+      printf("[ VIO ] Empty Image!\n");
+      return;
+    }
+    
+    double scale_x = (double)width / img.cols;
+    double scale_y = (double)height / img.rows;
+    double actual_scale = std::min(scale_x, scale_y);
+    
+    printf("[ VIO ] Image size mismatch: %dx%d vs %dx%d, scaling by %.3f\n", 
+           img.cols, img.rows, width, height, actual_scale);
+    
+    cv::resize(img, img, cv::Size(width, height), 0, 0, CV_INTER_LINEAR);
   }
-  img_rgb = img.clone();
-  img_cp = img.clone();
-  // img_test = img.clone();
-
-  if (img.channels() == 3) cv::cvtColor(img, img, CV_BGR2GRAY);
+  
+  if (img.channels() == 3) {
+    img_rgb = img.clone();
+    cv::cvtColor(img, img, CV_BGR2GRAY);
+  }
+  else{
+    img_rgb = img.clone();
+  }
+  
+  img_cp = img_rgb.clone();
 
   new_frame_.reset(new Frame(cam, img));
   updateFrameState(*state);

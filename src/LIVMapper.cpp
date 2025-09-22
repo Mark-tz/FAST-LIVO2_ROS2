@@ -111,6 +111,19 @@ void LIVMapper::readParameters(rclcpp::Node::SharedPtr &node)
   this->node->declare_parameter<bool>("publish.pub_effect_point_en", false);
   this->node->declare_parameter<bool>("publish.dense_map_en", false);
 
+  this->node->declare_parameter<std::string>("laserMapping.cam_model", "Pinhole");
+  this->node->declare_parameter<int>("laserMapping.cam_width", 752);
+  this->node->declare_parameter<int>("laserMapping.cam_height", 480);
+  this->node->declare_parameter<double>("laserMapping.scale", 1.0);
+  this->node->declare_parameter<double>("laserMapping.cam_fx", 400.0);
+  this->node->declare_parameter<double>("laserMapping.cam_fy", 400.0);
+  this->node->declare_parameter<double>("laserMapping.cam_cx", 376.0);
+  this->node->declare_parameter<double>("laserMapping.cam_cy", 240.0);
+  this->node->declare_parameter<double>("laserMapping.cam_d0", 0.0);
+  this->node->declare_parameter<double>("laserMapping.cam_d1", 0.0);
+  this->node->declare_parameter<double>("laserMapping.cam_d2", 0.0);
+  this->node->declare_parameter<double>("laserMapping.cam_d3", 0.0);
+
   // get parameter
   this->node->get_parameter("common.lid_topic", lid_topic);
   this->node->get_parameter("common.imu_topic", imu_topic);
@@ -186,7 +199,7 @@ void LIVMapper::initializeComponents(rclcpp::Node::SharedPtr &node)
   voxelmap_manager->extT_ << VEC_FROM_ARRAY(extrinT);
   voxelmap_manager->extR_ << MAT_FROM_ARRAY(extrinR);
 
-  if (!vk::camera_loader::loadFromRosNs(this->node, "parameter_blackboard", vio_manager->cam)) throw std::runtime_error("Camera model not correctly specified.");
+  if (!vk::camera_loader::loadFromRosNs(this->node, "laserMapping", vio_manager->cam)) throw std::runtime_error("Camera model not correctly specified.");
 
   vio_manager->grid_size = grid_size;
   vio_manager->patch_size = patch_size;
@@ -253,7 +266,7 @@ void LIVMapper::initializeSubscribersAndPublishers(rclcpp::Node::SharedPtr &node
 {
   image_transport::ImageTransport it(this->node);
   if (p_pre->lidar_type == AVIA) {
-    sub_pcl = this->node->create_subscription<livox_ros_driver2::msg::CustomMsg>(lid_topic, 200000, std::bind(&LIVMapper::livox_pcl_cbk, this, std::placeholders::_1));
+    sub_pcl = this->node->create_subscription<livox_ros_driver::msg::CustomMsg>(lid_topic, 200000, std::bind(&LIVMapper::livox_pcl_cbk, this, std::placeholders::_1));
   } else {
     sub_pcl = this->node->create_subscription<sensor_msgs::msg::PointCloud2>(lid_topic, 200000, std::bind(&LIVMapper::standard_pcl_cbk, this, std::placeholders::_1));
   }
@@ -775,22 +788,22 @@ void LIVMapper::standard_pcl_cbk(const sensor_msgs::msg::PointCloud2::ConstShare
   sig_buffer.notify_all();
 }
 
-void LIVMapper::livox_pcl_cbk(const livox_ros_driver2::msg::CustomMsg::ConstSharedPtr &msg_in)
+void LIVMapper::livox_pcl_cbk(const livox_ros_driver::msg::CustomMsg::ConstSharedPtr &msg_in)
 {
   if (!lidar_en) return;
   mtx_buffer.lock();
-  livox_ros_driver2::msg::CustomMsg::SharedPtr msg(new livox_ros_driver2::msg::CustomMsg(*msg_in));
+  livox_ros_driver::msg::CustomMsg::SharedPtr msg(new livox_ros_driver::msg::CustomMsg(*msg_in));
   // if ((abs(stamp2Sec(msg->header.stamp) - last_timestamp_lidar) > 0.2 && last_timestamp_lidar > 0) || sync_jump_flag)
   // {
-  //   ROS_WARN("lidar jumps %.3f\n", stamp2Sec(msg->header.stamp) - last_timestamp_lidar);
+  //   RCLCPP_INFO(this->node->get_logger(),"lidar jumps %.3f\n", stamp2Sec(msg->header.stamp) - last_timestamp_lidar);
   //   sync_jump_flag = true;
-  //   msg->header.stamp = rclcpp::Time().fromSec(last_timestamp_lidar + 0.1);
+  //   msg->header.stamp = rclcpp::Time(static_cast<int64_t>((last_timestamp_lidar + 0.1) * 1e9));
   // }
   if (abs(last_timestamp_imu - stamp2Sec(msg->header.stamp)) > 1.0 && !imu_buffer.empty())
   {
     double timediff_imu_wrt_lidar = last_timestamp_imu - stamp2Sec(msg->header.stamp);
     RCLCPP_INFO(this->node->get_logger(), "\033[95mSelf sync IMU and LiDAR, HARD time lag is %.10lf \n\033[0m", timediff_imu_wrt_lidar - 0.100);
-    // imu_time_offset = timediff_imu_wrt_lidar;
+    imu_time_offset = timediff_imu_wrt_lidar;
   }
 
   double cur_head_time = stamp2Sec(msg->header.stamp);
@@ -831,6 +844,7 @@ void LIVMapper::imu_cbk(const sensor_msgs::msg::Imu::ConstSharedPtr &msg_in)
   if (fabs(last_timestamp_lidar - timestamp) > 0.5 && (!ros_driver_fix_en))
   {
     RCLCPP_WARN(this->node->get_logger(), "IMU and LiDAR not synced! delta time: %lf .\n", last_timestamp_lidar - timestamp);
+    RCLCPP_WARN(this->node->get_logger(), "IMU timestamp: %.6f, LiDAR timestamp: %.6f.\n", timestamp, last_timestamp_lidar);
   }
 
   if (ros_driver_fix_en) timestamp += std::round(last_timestamp_lidar - timestamp);
@@ -857,7 +871,7 @@ void LIVMapper::imu_cbk(const sensor_msgs::msg::Imu::ConstSharedPtr &msg_in)
   last_timestamp_imu = timestamp;
 
   imu_buffer.push_back(msg);
-  cout<<"got imu: "<<timestamp<<" imu size "<<imu_buffer.size()<<endl;
+  // cout<<"got imu: "<<timestamp<<" imu size "<<imu_buffer.size()<<endl;
   mtx_buffer.unlock();
   if (imu_prop_enable)
   {
@@ -918,9 +932,22 @@ void LIVMapper::img_cbk(const sensor_msgs::msg::Image::ConstSharedPtr &msg_in)
     sig_buffer.notify_all();
     return;
   }
+  // 限制图像缓存大小
+  if (img_buffer.size() > 10) // 限制缓存数量
+  {
+    img_buffer.pop_front();
+    img_time_buffer.pop_front();
+  }
 
   cv::Mat img_cur = getImageFromMsg(msg);
-  img_buffer.push_back(img_cur);
+  if (img_cur.cols != vio_manager->width || img_cur.rows != vio_manager->height){
+    cv::Mat img_resized;
+    cv::resize(img_cur, img_resized, cv::Size(vio_manager->width, vio_manager->height));
+    img_buffer.push_back(img_resized);
+  }
+  else{
+    img_buffer.push_back(img_cur);
+  }
   img_time_buffer.push_back(img_time_correct);
 
   // ROS_INFO("Correct Image time: %.6f", img_time_correct);

@@ -22,7 +22,7 @@ def generate_launch_description():
     # Param use_rviz
     use_rviz_arg = DeclareLaunchArgument(
         "use_rviz",
-        default_value="False",
+        default_value="True",
         description="Whether to launch Rviz2",
     )
 
@@ -61,16 +61,16 @@ def generate_launch_description():
         # ),
 
         # use parameter_blackboard as global parameters server and load camera params
-        Node(
-            package='demo_nodes_cpp',
-            executable='parameter_blackboard',
-            name='parameter_blackboard',
-            # namespace='laserMapping',
-            parameters=[
-                camera_params_file,
-            ],
-            output='screen'
-        ),
+        # Node(
+        #     package='demo_nodes_cpp',
+        #     executable='parameter_blackboard',
+        #     name='parameter_blackboard',
+        #     # namespace='laserMapping',
+        #     parameters=[
+        #         camera_params_file,
+        #     ],
+        #     output='screen'
+        # ),
 
         # republish compressed image to raw image
         # https://robotics.stackexchange.com/questions/110939/how-do-i-remap-compressed-video-to-raw-video-in-ros2
@@ -114,4 +114,32 @@ def generate_launch_description():
             arguments=["-d", rviz_config_file],
             output="screen"
         ),
+
+        # 替换现有的注释掉的livox节点配置
+        Node(
+            package='livox_ros_driver',
+            executable='livox_ros_driver_node',
+            name='livox_lidar_publisher',
+            parameters=[{
+                'xfer_format': 1,  # 关键：设置为1发布CustomMsg格式
+                'multi_topic': 0,
+                'data_src': 0,  # 0表示连接真实LiDAR设备
+                'publish_freq': 10.0,
+                'output_data_type': 0,
+                # 'cmdline_str': '100000000000000',  # 你的设备broadcast code
+                # 'user_config_path': '/home/turingzero/ros_ws/ws/src/livox_ros_driver/livox_ros_driver/config/livox_lidar_config.json',
+                'frame_id': 'livox_frame',
+                'enable_lidar_bag': False,
+                'enable_imu_bag': False,
+                'use_pc_time': True,
+            }],
+            output="screen"
+        ),
+
+        # Node(
+        #     package='hk_camera',
+        #     executable='hk_camera',
+        #     name='hk_camera',
+        #     output="screen"
+        # )
     ])
